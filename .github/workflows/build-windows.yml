@@ -17,6 +17,11 @@ permissions:
 env:
   TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
   TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+  # GH_PAT is a Personal Access Token with `repo` scope — required for private repos.
+  # Create one at: GitHub → Settings → Developer settings → Personal access tokens (classic)
+  # Then add it as a repository secret named GH_PAT.
+  # Falls back to GITHUB_TOKEN for public repos.
+  GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
 
 jobs:
   build-windows:
@@ -91,18 +96,9 @@ jobs:
           cp src-tauri/target/x86_64-pc-windows-msvc/release/donut-daemon.exe src-tauri/binaries/donut-daemon-x86_64-pc-windows-msvc.exe
 
       - name: Build Tauri app (Windows)
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REF_NAME: ${{ steps.tag.outputs.tag }}
-        with:
-          projectPath: ./src-tauri
-          tagName: ${{ steps.tag.outputs.tag }}
-          releaseName: "Donut Browser ${{ steps.tag.outputs.tag }}"
-          releaseBody: "Windows build. See assets below to download the installer."
-          releaseDraft: false
-          prerelease: false
-          args: --target x86_64-pc-windows-msvc --verbose
+        shell: bash
+        working-directory: ./src-tauri
+        run: pnpm tauri build --target x86_64-pc-windows-msvc --verbose
 
       - name: Create portable Windows ZIP
         shell: bash
@@ -123,11 +119,21 @@ jobs:
           touch "$PORTABLE_DIR/.portable"
           7z a "Donut_${VERSION}_x64-portable.zip" "$PORTABLE_DIR"
 
-      - name: Upload portable ZIP to release
+      - name: Create GitHub Release and upload artifacts
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ steps.tag.outputs.tag }}"
           VERSION="${TAG#v}"
-          gh release upload "$TAG" "Donut_${VERSION}_x64-portable.zip" --clobber
+          SETUP_EXE="src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/Donut_${VERSION}_x64-setup.exe"
+          PORTABLE_ZIP="Donut_${VERSION}_x64-portable.zip"
+
+          # Create the release (ignore error if it already exists)
+          gh release create "$TAG" \
+            --title "Donut Browser ${TAG}" \
+            --notes "Windows build ${TAG}." \
+            --target "$GITHUB_SHA" \
+            2>/dev/null || true
+
+          # Upload installer and portable zip
+          gh release upload "$TAG" "$SETUP_EXE" --clobber
+          gh release upload "$TAG" "$PORTABLE_ZIP" --clobber

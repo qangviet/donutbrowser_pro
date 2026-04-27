@@ -1,0 +1,133 @@
+name: Build Windows
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v0.22.1). Leave empty to use the version from Cargo.toml."
+        required: false
+        default: ""
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+  TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve tag
+        id: tag
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.ref_type }}" == "tag" ]; then
+            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            VERSION=$(grep '^version' src-tauri/Cargo.toml | head -1 | sed 's/.*= *"\(.*\)"/\1/')
+            echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: "pnpm"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workdir: ./src-tauri
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        run: pnpm exec next build
+
+      - name: Verify frontend dist exists
+        shell: bash
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "Error: dist directory not found after build"
+            ls -la
+            exit 1
+          fi
+
+      - name: Build sidecar binaries
+        shell: bash
+        working-directory: ./src-tauri
+        run: |
+          cargo build --bin donut-proxy --target x86_64-pc-windows-msvc --release
+          cargo build --bin donut-daemon --target x86_64-pc-windows-msvc --release
+
+      - name: Copy sidecar binaries
+        shell: bash
+        run: |
+          mkdir -p src-tauri/binaries
+          cp src-tauri/target/x86_64-pc-windows-msvc/release/donut-proxy.exe src-tauri/binaries/donut-proxy-x86_64-pc-windows-msvc.exe
+          cp src-tauri/target/x86_64-pc-windows-msvc/release/donut-daemon.exe src-tauri/binaries/donut-daemon-x86_64-pc-windows-msvc.exe
+
+      - name: Build Tauri app (Windows)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REF_NAME: ${{ steps.tag.outputs.tag }}
+        with:
+          projectPath: ./src-tauri
+          tagName: ${{ steps.tag.outputs.tag }}
+          releaseName: "Donut Browser ${{ steps.tag.outputs.tag }}"
+          releaseBody: "Windows build. See assets below to download the installer."
+          releaseDraft: false
+          prerelease: false
+          args: --target x86_64-pc-windows-msvc --verbose
+
+      - name: Create portable Windows ZIP
+        shell: bash
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          VERSION="${TAG#v}"
+          PORTABLE_DIR="Donut-Portable"
+          mkdir -p "$PORTABLE_DIR"
+
+          cp "src-tauri/target/x86_64-pc-windows-msvc/release/donutbrowser.exe" "$PORTABLE_DIR/Donut.exe"
+          cp "src-tauri/target/x86_64-pc-windows-msvc/release/donut-proxy.exe" "$PORTABLE_DIR/"
+          cp "src-tauri/target/x86_64-pc-windows-msvc/release/donut-daemon.exe" "$PORTABLE_DIR/"
+
+          if [ -f "src-tauri/target/x86_64-pc-windows-msvc/release/WebView2Loader.dll" ]; then
+            cp "src-tauri/target/x86_64-pc-windows-msvc/release/WebView2Loader.dll" "$PORTABLE_DIR/"
+          fi
+
+          touch "$PORTABLE_DIR/.portable"
+          7z a "Donut_${VERSION}_x64-portable.zip" "$PORTABLE_DIR"
+
+      - name: Upload portable ZIP to release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          VERSION="${TAG#v}"
+          gh release upload "$TAG" "Donut_${VERSION}_x64-portable.zip" --clobber

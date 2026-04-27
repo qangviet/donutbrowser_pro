@@ -41,13 +41,11 @@ const getMappedBrowser = (browser: string): "camoufox" | "wayfern" => {
 interface ImportProfileDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  crossOsUnlocked?: boolean;
 }
 
 export function ImportProfileDialog({
   isOpen,
   onClose,
-  crossOsUnlocked,
 }: ImportProfileDialogProps) {
   const [detectedProfiles, setDetectedProfiles] = useState<DetectedProfile[]>(
     [],
@@ -558,8 +556,6 @@ export function ImportProfileDialog({
                     setCamoufoxConfig((prev) => ({ ...prev, [key]: value }));
                   }}
                   isCreating={true}
-                  crossOsUnlocked={crossOsUnlocked}
-                  limitedMode={!crossOsUnlocked}
                 />
               ) : (
                 <WayfernConfigForm
@@ -568,8 +564,6 @@ export function ImportProfileDialog({
                     setWayfernConfig((prev) => ({ ...prev, [key]: value }));
                   }}
                   isCreating={true}
-                  crossOsUnlocked={crossOsUnlocked}
-                  limitedMode={!crossOsUnlocked}
                 />
               )}
             </div>

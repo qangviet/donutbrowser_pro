@@ -410,6 +410,42 @@
       "profileLockedShort": "使用中",
       "cannotLaunchLocked": "无法启动 — 配置文件正被 {{email}} 使用",
       "createdBy": "由 {{email}} 创建"
+    },
+    "r2": {
+      "tabLabel": "Cloudflare R2",
+      "description": "将您的配置文件、代理和组直接同步到您自己的 Cloudflare R2 存储桶。数据按配置的间隔更新，不是实时同步。",
+      "accountId": "账户 ID",
+      "accountIdPlaceholder": "您的 Cloudflare 账户 ID",
+      "bucketName": "存储桶名称",
+      "bucketNamePlaceholder": "my-donut-sync-bucket",
+      "accessKeyId": "访问密钥 ID",
+      "accessKeyIdPlaceholder": "R2 访问密钥 ID",
+      "secretAccessKey": "秘密访问密钥",
+      "secretAccessKeyPlaceholder": "R2 秘密访问密钥",
+      "showKey": "显示密钥",
+      "hideKey": "隐藏密钥",
+      "syncInterval": "同步间隔",
+      "intervalNote": "同步按所选间隔运行。使用「立即同步」可触发即时同步。",
+      "intervals": {
+        "15": "15 分钟",
+        "30": "30 分钟",
+        "60": "1 小时",
+        "360": "6 小时",
+        "1440": "24 小时"
+      },
+      "active": "R2 同步已激活",
+      "lastSync": "上次同步",
+      "testConnection": "测试连接",
+      "testing": "测试中...",
+      "connectionSuccess": "连接成功",
+      "connectionFailed": "连接失败",
+      "fillAllFields": "请填写所有字段",
+      "save": "启用 R2 同步",
+      "syncNow": "立即同步",
+      "disconnect": "断开连接",
+      "settingsSaved": "R2 同步已启用并运行",
+      "disconnected": "R2 同步已断开",
+      "syncSuccess": "已同步 {{profiles}} 个配置文件、{{proxies}} 个代理、{{groups}} 个组"
     }
   },
   "integrations": {

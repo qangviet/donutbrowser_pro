@@ -88,7 +88,6 @@ interface CreateProfileDialogProps {
     launchHook?: string;
   }) => Promise<void>;
   selectedGroupId?: string;
-  crossOsUnlocked?: boolean;
 }
 
 interface BrowserOption {
@@ -112,7 +111,6 @@ export function CreateProfileDialog({
   onClose,
   onCreateProfile,
   selectedGroupId,
-  crossOsUnlocked = false,
 }: CreateProfileDialogProps) {
   const { t } = useTranslation();
   const [profileName, setProfileName] = useState("");
@@ -810,8 +808,6 @@ export function CreateProfileDialog({
                               config={wayfernConfig}
                               onConfigChange={updateWayfernConfig}
                               isCreating
-                              crossOsUnlocked={crossOsUnlocked}
-                              limitedMode={!crossOsUnlocked}
                               profileVersion={
                                 getBestAvailableVersion("wayfern")?.version
                               }
@@ -910,21 +906,17 @@ export function CreateProfileDialog({
                               </div>
                             )}
 
-                            {crossOsUnlocked && (
-                              <Alert className="border-warning/50 bg-warning/10">
-                                <AlertDescription className="text-sm">
-                                  {t("createProfile.camoufoxWarning")}
-                                </AlertDescription>
-                              </Alert>
-                            )}
+                            <Alert className="border-warning/50 bg-warning/10">
+                              <AlertDescription className="text-sm">
+                                {t("createProfile.camoufoxWarning")}
+                              </AlertDescription>
+                            </Alert>
 
                             <SharedCamoufoxConfigForm
                               config={camoufoxConfig}
                               onConfigChange={updateCamoufoxConfig}
                               isCreating
                               browserType="camoufox"
-                              crossOsUnlocked={crossOsUnlocked}
-                              limitedMode={!crossOsUnlocked}
                               profileVersion={
                                 getBestAvailableVersion("camoufox")?.version
                               }

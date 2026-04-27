@@ -203,7 +203,7 @@ const HomeHeader = ({
   } = useLogoEasterEgg();
 
   return (
-    <div className="flex justify-between items-center mt-6">
+    <div className="flex justify-between items-center mt-6 gap-4">
       <div className="flex gap-3 items-center">
         {!isHidden ? (
           <button
@@ -238,8 +238,8 @@ const HomeHeader = ({
         )}
         <CardTitle>Donut</CardTitle>
       </div>
-      <div className="flex gap-2 items-center">
-        <div className="relative">
+      <div className="flex gap-2 items-center flex-1 justify-end">
+        <div className="relative w-48 min-w-[12rem] max-w-xs flex-1">
           <Input
             type="text"
             placeholder={t("header.searchPlaceholder")}
@@ -247,7 +247,7 @@ const HomeHeader = ({
             onChange={(e) => {
               onSearchQueryChange(e.target.value);
             }}
-            className="pr-8 pl-10 w-48"
+            className="pr-8 pl-10 w-full"
           />
           <LuSearch className="absolute left-3 top-1/2 w-4 h-4 transform -translate-y-1/2 text-muted-foreground" />
           {searchQuery && (

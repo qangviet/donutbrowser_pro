@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LuEye, LuEyeOff } from "react-icons/lu";
 import { LoadingButton } from "@/components/loading-button";
+import { R2SyncTab } from "@/components/r2-sync-tab";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,7 +17,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ProBadge } from "@/components/ui/pro-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
@@ -245,6 +245,7 @@ export function SyncConfigDialog({ isOpen, onClose }: SyncConfigDialogProps) {
 
   const cloudBlocked = !isLoggedIn && hasConfig;
   const selfHostedBlocked = isLoggedIn;
+  const r2Blocked = isLoggedIn || hasConfig;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -342,20 +343,17 @@ export function SyncConfigDialog({ isOpen, onClose }: SyncConfigDialogProps) {
                 className="flex-1"
                 disabled={cloudBlocked}
               >
-                <span className="flex items-center gap-2">
-                  {t("sync.cloud.tabLabel")}
-                  {cloudBlocked && <ProBadge />}
-                </span>
+                {t("sync.cloud.tabLabel")}
               </TabsTrigger>
               <TabsTrigger
                 value="self-hosted"
                 className="flex-1"
                 disabled={selfHostedBlocked}
               >
-                <span className="flex items-center gap-2">
-                  {t("sync.cloud.selfHostedTabLabel")}
-                  {selfHostedBlocked && <ProBadge />}
-                </span>
+                {t("sync.cloud.selfHostedTabLabel")}
+              </TabsTrigger>
+              <TabsTrigger value="r2" className="flex-1" disabled={r2Blocked}>
+                {t("sync.r2.tabLabel")}
               </TabsTrigger>
             </TabsList>
 
@@ -514,6 +512,10 @@ export function SyncConfigDialog({ isOpen, onClose }: SyncConfigDialogProps) {
                   Save
                 </LoadingButton>
               </DialogFooter>
+            </TabsContent>
+
+            <TabsContent value="r2">
+              <R2SyncTab />
             </TabsContent>
           </Tabs>
         )}

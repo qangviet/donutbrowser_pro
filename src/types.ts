@@ -74,6 +74,28 @@ export interface SyncSettings {
   sync_token?: string;
 }
 
+export interface R2SyncPublicSettings {
+  enabled: boolean;
+  account_id: string;
+  bucket_name: string;
+  interval_minutes: number;
+  last_sync?: number;
+  last_sync_error?: string;
+}
+
+export interface R2SyncSettings extends R2SyncPublicSettings {
+  access_key_id?: string;
+  secret_access_key?: string;
+}
+
+export interface R2SyncResult {
+  success: boolean;
+  synced_at: number;
+  profiles_count: number;
+  proxies_count: number;
+  groups_count: number;
+}
+
 export interface CloudUser {
   id: string;
   email: string;

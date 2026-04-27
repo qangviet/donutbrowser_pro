@@ -694,6 +694,170 @@ impl SettingsManager {
     settings.sync_server_url = url;
     self.save_settings(&settings)
   }
+
+  fn get_r2_sync_settings_file(&self) -> PathBuf {
+    self.get_settings_dir().join("r2_sync_settings.json")
+  }
+
+  fn get_r2_sync_secrets_file(&self) -> PathBuf {
+    self.get_settings_dir().join("r2_sync_secrets.dat")
+  }
+
+  pub fn load_r2_sync_public_settings(
+    &self,
+  ) -> Result<crate::sync::R2SyncPublicSettings, Box<dyn std::error::Error>> {
+    let file = self.get_r2_sync_settings_file();
+    if !file.exists() {
+      return Ok(crate::sync::R2SyncPublicSettings::default());
+    }
+    let content = fs::read_to_string(&file)?;
+    Ok(serde_json::from_str(&content).unwrap_or_default())
+  }
+
+  pub fn save_r2_sync_public_settings(
+    &self,
+    settings: &crate::sync::R2SyncPublicSettings,
+  ) -> Result<(), Box<dyn std::error::Error>> {
+    create_dir_all(self.get_settings_dir())?;
+    let json = serde_json::to_string_pretty(settings)?;
+    fs::write(self.get_r2_sync_settings_file(), json)?;
+    Ok(())
+  }
+
+  pub async fn store_r2_sync_secrets(
+    &self,
+    secrets: &crate::sync::R2SyncSecrets,
+  ) -> Result<(), Box<dyn std::error::Error>> {
+    let secrets_json = serde_json::to_string(secrets)?;
+    self
+      .encrypt_and_store(
+        &self.get_r2_sync_secrets_file(),
+        b"DBR2S",
+        secrets_json.as_bytes(),
+      )
+      .await
+  }
+
+  pub async fn load_r2_sync_secrets(
+    &self,
+  ) -> Result<Option<crate::sync::R2SyncSecrets>, Box<dyn std::error::Error>> {
+    let file = self.get_r2_sync_secrets_file();
+    if !file.exists() {
+      return Ok(None);
+    }
+    let bytes = self.decrypt_from_file(&file, b"DBR2S").await?;
+    let secrets: crate::sync::R2SyncSecrets = serde_json::from_slice(&bytes)?;
+    Ok(Some(secrets))
+  }
+
+  pub async fn remove_r2_sync_secrets(&self) -> Result<(), Box<dyn std::error::Error>> {
+    let file = self.get_r2_sync_secrets_file();
+    if file.exists() {
+      fs::remove_file(file)?;
+    }
+    Ok(())
+  }
+
+  async fn encrypt_and_store(
+    &self,
+    path: &PathBuf,
+    header: &[u8; 5],
+    plaintext: &[u8],
+  ) -> Result<(), Box<dyn std::error::Error>> {
+    if let Some(parent) = path.parent() {
+      create_dir_all(parent)?;
+    }
+
+    let vault_password = Self::get_vault_password();
+    let salt = SaltString::generate(&mut OsRng);
+    let argon2 = Argon2::default();
+    let password_hash = argon2
+      .hash_password(vault_password.as_bytes(), &salt)
+      .map_err(|e| format!("Argon2 key derivation failed: {e}"))?;
+    let hash_value = password_hash.hash.unwrap();
+    let hash_bytes = hash_value.as_bytes();
+    let key_bytes: [u8; 32] = hash_bytes[..32]
+      .try_into()
+      .map_err(|_| "Invalid key length")?;
+    let key = Key::<Aes256Gcm>::from(key_bytes);
+    let cipher = Aes256Gcm::new(&key);
+    let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
+    let ciphertext = cipher
+      .encrypt(&nonce, plaintext)
+      .map_err(|e| format!("Encryption failed: {e}"))?;
+
+    let mut file_data = Vec::new();
+    file_data.extend_from_slice(header);
+    file_data.push(2u8);
+    let salt_str = salt.as_str();
+    file_data.push(salt_str.len() as u8);
+    file_data.extend_from_slice(salt_str.as_bytes());
+    file_data.extend_from_slice(&nonce);
+    file_data.extend_from_slice(&(ciphertext.len() as u32).to_le_bytes());
+    file_data.extend_from_slice(&ciphertext);
+
+    fs::write(path, file_data)?;
+    Ok(())
+  }
+
+  async fn decrypt_from_file(
+    &self,
+    path: &PathBuf,
+    expected_header: &[u8; 5],
+  ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    let file_data = fs::read(path)?;
+
+    if file_data.len() < 6 || &file_data[0..5] != expected_header {
+      return Err("Invalid file header".into());
+    }
+
+    let version = file_data[5];
+    if version != 2 {
+      return Err("Unsupported file version".into());
+    }
+
+    let mut offset = 6;
+    let salt_len = file_data[offset] as usize;
+    offset += 1;
+
+    let salt_bytes = &file_data[offset..offset + salt_len];
+    let salt_str = std::str::from_utf8(salt_bytes)?;
+    let salt = SaltString::from_b64(salt_str).map_err(|_| "Invalid salt format")?;
+    offset += salt_len;
+
+    let nonce_bytes: [u8; 12] = file_data[offset..offset + 12]
+      .try_into()
+      .map_err(|_| "Invalid nonce length")?;
+    let nonce = Nonce::from(nonce_bytes);
+    offset += 12;
+
+    let ciphertext_len = u32::from_le_bytes([
+      file_data[offset],
+      file_data[offset + 1],
+      file_data[offset + 2],
+      file_data[offset + 3],
+    ]) as usize;
+    offset += 4;
+
+    let ciphertext = &file_data[offset..offset + ciphertext_len];
+
+    let vault_password = Self::get_vault_password();
+    let argon2 = Argon2::default();
+    let password_hash = argon2
+      .hash_password(vault_password.as_bytes(), &salt)
+      .map_err(|e| format!("Argon2 key derivation failed: {e}"))?;
+    let hash_value = password_hash.hash.unwrap();
+    let hash_bytes = hash_value.as_bytes();
+    let key_bytes: [u8; 32] = hash_bytes[..32]
+      .try_into()
+      .map_err(|_| "Invalid key length")?;
+    let key = Key::<Aes256Gcm>::from(key_bytes);
+    let cipher = Aes256Gcm::new(&key);
+
+    cipher
+      .decrypt(&nonce, ciphertext)
+      .map_err(|_| "Decryption failed".into())
+  }
 }
 
 #[tauri::command]
@@ -979,6 +1143,127 @@ pub fn get_system_info() -> SystemInfo {
     arch: arch.to_string(),
     portable: crate::app_dirs::is_portable(),
   }
+}
+
+#[tauri::command]
+pub async fn get_r2_sync_settings() -> Result<crate::sync::R2SyncSettings, String> {
+  let manager = SettingsManager::instance();
+  let public = manager
+    .load_r2_sync_public_settings()
+    .map_err(|e| format!("Failed to load R2 sync settings: {e}"))?;
+  let secrets = manager
+    .load_r2_sync_secrets()
+    .await
+    .map_err(|e| format!("Failed to load R2 sync secrets: {e}"))?;
+  Ok(crate::sync::R2SyncSettings {
+    public,
+    access_key_id: secrets.as_ref().map(|s| s.access_key_id.clone()),
+    secret_access_key: secrets.as_ref().map(|s| s.secret_access_key.clone()),
+  })
+}
+
+#[tauri::command]
+pub async fn save_r2_sync_settings(settings: crate::sync::R2SyncSettings) -> Result<(), String> {
+  let manager = SettingsManager::instance();
+  manager
+    .save_r2_sync_public_settings(&settings.public)
+    .map_err(|e| format!("Failed to save R2 sync settings: {e}"))?;
+
+  if let (Some(key_id), Some(secret_key)) = (&settings.access_key_id, &settings.secret_access_key) {
+    if !key_id.is_empty() && !secret_key.is_empty() {
+      manager
+        .store_r2_sync_secrets(&crate::sync::R2SyncSecrets {
+          access_key_id: key_id.clone(),
+          secret_access_key: secret_key.clone(),
+        })
+        .await
+        .map_err(|e| format!("Failed to store R2 sync secrets: {e}"))?;
+    }
+  }
+
+  if settings.public.enabled {
+    if let (Some(key_id), Some(secret_key)) = (&settings.access_key_id, &settings.secret_access_key)
+    {
+      if !key_id.is_empty() && !secret_key.is_empty() {
+        crate::sync::start_r2_scheduler(
+          settings.public.account_id.clone(),
+          settings.public.bucket_name.clone(),
+          key_id.clone(),
+          secret_key.clone(),
+          settings.public.interval_minutes,
+          manager.get_settings_dir(),
+        );
+      }
+    }
+  } else {
+    crate::sync::stop_r2_scheduler();
+  }
+
+  Ok(())
+}
+
+#[tauri::command]
+pub async fn test_r2_connection(
+  account_id: String,
+  bucket_name: String,
+  access_key_id: String,
+  secret_access_key: String,
+) -> Result<(), String> {
+  let engine =
+    crate::sync::R2SyncEngine::new(account_id, bucket_name, access_key_id, secret_access_key);
+  engine.test_connection().await
+}
+
+#[tauri::command]
+pub async fn trigger_r2_sync_now() -> Result<crate::sync::R2SyncResult, String> {
+  let manager = SettingsManager::instance();
+  let public = manager
+    .load_r2_sync_public_settings()
+    .map_err(|e| format!("Failed to load R2 sync settings: {e}"))?;
+
+  if !public.enabled {
+    return Err("R2 sync is not enabled".to_string());
+  }
+
+  let secrets = manager
+    .load_r2_sync_secrets()
+    .await
+    .map_err(|e| format!("Failed to load R2 sync secrets: {e}"))?
+    .ok_or_else(|| "R2 sync credentials not configured".to_string())?;
+
+  let engine = crate::sync::R2SyncEngine::new(
+    public.account_id,
+    public.bucket_name,
+    secrets.access_key_id,
+    secrets.secret_access_key,
+  );
+
+  let result = engine.sync_all().await?;
+
+  let mut updated_public = manager.load_r2_sync_public_settings().unwrap_or_default();
+  updated_public.last_sync = Some(result.synced_at);
+  updated_public.last_sync_error = None;
+  let _ = manager.save_r2_sync_public_settings(&updated_public);
+
+  Ok(result)
+}
+
+#[tauri::command]
+pub async fn disconnect_r2_sync() -> Result<(), String> {
+  let manager = SettingsManager::instance();
+  let mut public = manager
+    .load_r2_sync_public_settings()
+    .map_err(|e| format!("Failed to load R2 sync settings: {e}"))?;
+  public.enabled = false;
+  manager
+    .save_r2_sync_public_settings(&public)
+    .map_err(|e| format!("Failed to save R2 sync settings: {e}"))?;
+  manager
+    .remove_r2_sync_secrets()
+    .await
+    .map_err(|e| format!("Failed to remove R2 sync secrets: {e}"))?;
+  crate::sync::stop_r2_scheduler();
+  Ok(())
 }
 
 // Global singleton instance

@@ -410,6 +410,42 @@
       "profileLockedShort": "Em uso",
       "cannotLaunchLocked": "Não é possível iniciar — o perfil está em uso por {{email}}",
       "createdBy": "Criado por {{email}}"
+    },
+    "r2": {
+      "tabLabel": "Cloudflare R2",
+      "description": "Sincronize seus perfis, proxies e grupos diretamente no seu bucket Cloudflare R2. Os dados são atualizados no intervalo configurado, não em tempo real.",
+      "accountId": "ID da conta",
+      "accountIdPlaceholder": "Seu ID de conta Cloudflare",
+      "bucketName": "Nome do bucket",
+      "bucketNamePlaceholder": "meu-bucket-donut-sync",
+      "accessKeyId": "ID da chave de acesso",
+      "accessKeyIdPlaceholder": "ID da chave de acesso R2",
+      "secretAccessKey": "Chave de acesso secreta",
+      "secretAccessKeyPlaceholder": "Chave de acesso secreta R2",
+      "showKey": "Mostrar chave",
+      "hideKey": "Ocultar chave",
+      "syncInterval": "Intervalo de sincronização",
+      "intervalNote": "A sincronização é executada no intervalo selecionado. Use \"Sincronizar agora\" para uma sincronização imediata.",
+      "intervals": {
+        "15": "15 minutos",
+        "30": "30 minutos",
+        "60": "1 hora",
+        "360": "6 horas",
+        "1440": "24 horas"
+      },
+      "active": "Sincronização R2 ativa",
+      "lastSync": "Última sincronização",
+      "testConnection": "Testar conexão",
+      "testing": "Testando...",
+      "connectionSuccess": "Conexão bem-sucedida",
+      "connectionFailed": "Falha na conexão",
+      "fillAllFields": "Por favor, preencha todos os campos",
+      "save": "Ativar sincronização R2",
+      "syncNow": "Sincronizar agora",
+      "disconnect": "Desconectar",
+      "settingsSaved": "Sincronização R2 ativada e em execução",
+      "disconnected": "Sincronização R2 desconectada",
+      "syncSuccess": "Sincronizados {{profiles}} perfis, {{proxies}} proxies, {{groups}} grupos"
     }
   },
   "integrations": {

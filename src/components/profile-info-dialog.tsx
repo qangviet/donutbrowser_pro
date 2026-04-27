@@ -34,7 +34,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { ProBadge } from "@/components/ui/pro-badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -71,7 +70,6 @@ interface ProfileInfoDialogProps {
   onCloneProfile?: (profile: BrowserProfile) => void;
   onDeleteProfile?: (profile: BrowserProfile) => void;
   onLaunchWithSync?: (profile: BrowserProfile) => void;
-  crossOsUnlocked?: boolean;
   isRunning?: boolean;
   isDisabled?: boolean;
   isCrossOs?: boolean;
@@ -119,7 +117,6 @@ export function ProfileInfoDialog({
   onCloneProfile,
   onDeleteProfile,
   onLaunchWithSync,
-  crossOsUnlocked = false,
   isRunning = false,
   isDisabled = false,
   isCrossOs = false,
@@ -234,7 +231,6 @@ export function ProfileInfoDialog({
     onClick: () => void;
     disabled?: boolean;
     destructive?: boolean;
-    proBadge?: boolean;
     runningBadge?: boolean;
     hidden?: boolean;
   }
@@ -282,8 +278,7 @@ export function ProfileInfoDialog({
       onClick: () => {
         handleAction(() => onLaunchWithSync?.(profile));
       },
-      disabled: isDisabled || isRunning || !crossOsUnlocked,
-      proBadge: !crossOsUnlocked,
+      disabled: isDisabled || isRunning,
       hidden: profile.browser !== "wayfern" || !onLaunchWithSync,
     },
     {
@@ -590,9 +585,6 @@ export function ProfileInfoDialog({
                           <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-primary/15 text-primary uppercase">
                             {t("common.status.running")}
                           </span>
-                        )}
-                        {action.proBadge && !action.runningBadge && (
-                          <ProBadge />
                         )}
                       </span>
                       <LuChevronRight className="w-4 h-4 text-muted-foreground" />

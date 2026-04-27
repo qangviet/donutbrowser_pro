@@ -410,6 +410,42 @@
       "profileLockedShort": "Используется",
       "cannotLaunchLocked": "Невозможно запустить — профиль используется {{email}}",
       "createdBy": "Создано {{email}}"
+    },
+    "r2": {
+      "tabLabel": "Cloudflare R2",
+      "description": "Синхронизируйте профили, прокси и группы напрямую в ваш бакет Cloudflare R2. Данные обновляются с заданным интервалом, не в реальном времени.",
+      "accountId": "ID аккаунта",
+      "accountIdPlaceholder": "Ваш ID аккаунта Cloudflare",
+      "bucketName": "Имя бакета",
+      "bucketNamePlaceholder": "мой-бакет-donut-sync",
+      "accessKeyId": "ID ключа доступа",
+      "accessKeyIdPlaceholder": "ID ключа доступа R2",
+      "secretAccessKey": "Секретный ключ доступа",
+      "secretAccessKeyPlaceholder": "Секретный ключ доступа R2",
+      "showKey": "Показать ключ",
+      "hideKey": "Скрыть ключ",
+      "syncInterval": "Интервал синхронизации",
+      "intervalNote": "Синхронизация выполняется с выбранным интервалом. Нажмите «Синхронизировать сейчас» для немедленной синхронизации.",
+      "intervals": {
+        "15": "15 минут",
+        "30": "30 минут",
+        "60": "1 час",
+        "360": "6 часов",
+        "1440": "24 часа"
+      },
+      "active": "Синхронизация R2 активна",
+      "lastSync": "Последняя синхронизация",
+      "testConnection": "Проверить подключение",
+      "testing": "Проверка...",
+      "connectionSuccess": "Подключение успешно",
+      "connectionFailed": "Ошибка подключения",
+      "fillAllFields": "Пожалуйста, заполните все поля",
+      "save": "Включить синхронизацию R2",
+      "syncNow": "Синхронизировать сейчас",
+      "disconnect": "Отключить",
+      "settingsSaved": "Синхронизация R2 включена и работает",
+      "disconnected": "Синхронизация R2 отключена",
+      "syncSuccess": "Синхронизировано: {{profiles}} профилей, {{proxies}} прокси, {{groups}} групп"
     }
   },
   "integrations": {

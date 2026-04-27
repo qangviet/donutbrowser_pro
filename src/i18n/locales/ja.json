@@ -410,6 +410,42 @@
       "profileLockedShort": "使用中",
       "cannotLaunchLocked": "起動できません — {{email}} がプロファイルを使用中です",
       "createdBy": "{{email}} が作成"
+    },
+    "r2": {
+      "tabLabel": "Cloudflare R2",
+      "description": "プロファイル、プロキシ、グループを自分のCloudflare R2バケットに直接同期します。データは設定した間隔で更新されます（リアルタイムではありません）。",
+      "accountId": "アカウントID",
+      "accountIdPlaceholder": "CloudflareアカウントID",
+      "bucketName": "バケット名",
+      "bucketNamePlaceholder": "my-donut-sync-bucket",
+      "accessKeyId": "アクセスキーID",
+      "accessKeyIdPlaceholder": "R2アクセスキーID",
+      "secretAccessKey": "シークレットアクセスキー",
+      "secretAccessKeyPlaceholder": "R2シークレットアクセスキー",
+      "showKey": "キーを表示",
+      "hideKey": "キーを非表示",
+      "syncInterval": "同期間隔",
+      "intervalNote": "同期は選択した間隔で実行されます。「今すぐ同期」で即時同期できます。",
+      "intervals": {
+        "15": "15分",
+        "30": "30分",
+        "60": "1時間",
+        "360": "6時間",
+        "1440": "24時間"
+      },
+      "active": "R2同期が有効",
+      "lastSync": "最終同期",
+      "testConnection": "接続テスト",
+      "testing": "テスト中...",
+      "connectionSuccess": "接続成功",
+      "connectionFailed": "接続失敗",
+      "fillAllFields": "すべてのフィールドを入力してください",
+      "save": "R2同期を有効にする",
+      "syncNow": "今すぐ同期",
+      "disconnect": "切断",
+      "settingsSaved": "R2同期が有効になり実行中",
+      "disconnected": "R2同期が切断されました",
+      "syncSuccess": "{{profiles}}件のプロファイル、{{proxies}}件のプロキシ、{{groups}}件のグループを同期しました"
     }
   },
   "integrations": {

@@ -86,10 +86,12 @@ use downloaded_browsers_registry::{
 use downloader::{cancel_download, download_browser};
 
 use settings_manager::{
-  decline_launch_on_login, dismiss_window_resize_warning, enable_launch_on_login, get_app_settings,
-  get_sync_settings, get_system_info, get_system_language, get_table_sorting_settings,
-  get_window_resize_warning_dismissed, save_app_settings, save_sync_settings,
-  save_table_sorting_settings, should_show_launch_on_login_prompt,
+  decline_launch_on_login, disconnect_r2_sync, dismiss_window_resize_warning,
+  enable_launch_on_login, get_app_settings, get_r2_sync_settings, get_sync_settings,
+  get_system_info, get_system_language, get_table_sorting_settings,
+  get_window_resize_warning_dismissed, save_app_settings, save_r2_sync_settings,
+  save_sync_settings, save_table_sorting_settings, should_show_launch_on_login_prompt,
+  test_r2_connection, trigger_r2_sync_now,
 };
 
 use sync::{
@@ -1232,8 +1234,9 @@ pub fn run() {
       #[allow(unused_variables)]
       let win_builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
         .title("Donut Browser")
-        .inner_size(800.0, 500.0)
-        .resizable(false)
+        .inner_size(1000.0, 620.0)
+        .min_inner_size(800.0, 500.0)
+        .resizable(true)
         .fullscreen(false)
         .center()
         .focused(true)
@@ -1348,6 +1351,37 @@ pub fn run() {
               match mcp_server::McpServer::instance().start(mcp_handle).await {
                 Ok(port) => log::info!("MCP server auto-started on port {port}"),
                 Err(e) => log::warn!("Failed to auto-start MCP server: {e}"),
+              }
+            });
+          }
+        }
+      }
+
+      // Auto-start R2 sync scheduler if it was previously enabled
+      {
+        let settings_mgr = settings_manager::SettingsManager::instance();
+        if let Ok(public) = settings_mgr.load_r2_sync_public_settings() {
+          if public.enabled
+            && !public.account_id.is_empty()
+            && !public.bucket_name.is_empty()
+            && public.interval_minutes > 0
+          {
+            let settings_dir = settings_mgr.get_settings_dir();
+            tauri::async_runtime::spawn(async move {
+              match settings_mgr.load_r2_sync_secrets().await {
+                Ok(Some(secrets)) => {
+                  sync::start_r2_scheduler(
+                    public.account_id,
+                    public.bucket_name,
+                    secrets.access_key_id,
+                    secrets.secret_access_key,
+                    public.interval_minutes,
+                    settings_dir,
+                  );
+                  log::info!("[r2_sync] R2 sync scheduler auto-started");
+                }
+                Ok(None) => log::warn!("[r2_sync] R2 sync enabled but no secrets found"),
+                Err(e) => log::warn!("[r2_sync] Failed to load R2 sync secrets: {e}"),
               }
             });
           }
@@ -2003,6 +2037,11 @@ pub fn run() {
       get_traffic_stats_for_period,
       get_sync_settings,
       save_sync_settings,
+      get_r2_sync_settings,
+      save_r2_sync_settings,
+      test_r2_connection,
+      trigger_r2_sync_now,
+      disconnect_r2_sync,
       set_profile_sync_mode,
       request_profile_sync,
       set_proxy_sync_enabled,

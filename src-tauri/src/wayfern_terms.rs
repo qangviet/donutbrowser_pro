@@ -159,10 +159,21 @@ impl WayfernTermsManager {
   }
 
   async fn run_accept_command(&self, executable_path: &PathBuf) -> Result<(), String> {
-    let output = TokioCommand::new(executable_path)
-      .arg(ACCEPT_TERMS_FLAG)
-      .stdout(Stdio::piped())
-      .stderr(Stdio::piped())
+    let mut cmd = TokioCommand::new(executable_path);
+    cmd.arg(ACCEPT_TERMS_FLAG);
+    cmd.stdout(Stdio::piped());
+    cmd.stderr(Stdio::piped());
+
+    #[cfg(target_os = "linux")]
+    if let Some(install_dir) = executable_path.parent() {
+      let mut ld_library_path = vec![install_dir.to_string_lossy().to_string()];
+      if let Ok(existing) = std::env::var("LD_LIBRARY_PATH") {
+        ld_library_path.push(existing);
+      }
+      cmd.env("LD_LIBRARY_PATH", ld_library_path.join(":"));
+    }
+
+    let output = cmd
       .output()
       .await
       .map_err(|e| format!("Failed to run Wayfern: {e}"))?;

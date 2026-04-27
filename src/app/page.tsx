@@ -6,7 +6,6 @@ import { getCurrent } from "@tauri-apps/plugin-deep-link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CamoufoxConfigDialog } from "@/components/camoufox-config-dialog";
 import { CloneProfileDialog } from "@/components/clone-profile-dialog";
-import { CommercialTrialModal } from "@/components/commercial-trial-modal";
 import { CookieCopyDialog } from "@/components/cookie-copy-dialog";
 import { CookieManagementDialog } from "@/components/cookie-management-dialog";
 import { CreateProfileDialog } from "@/components/create-profile-dialog";
@@ -33,8 +32,6 @@ import { SyncFollowerDialog } from "@/components/sync-follower-dialog";
 import { WayfernTermsDialog } from "@/components/wayfern-terms-dialog";
 import { WindowResizeWarningDialog } from "@/components/window-resize-warning-dialog";
 import { useAppUpdateNotifications } from "@/hooks/use-app-update-notifications";
-import { useCloudAuth } from "@/hooks/use-cloud-auth";
-import { useCommercialTrial } from "@/hooks/use-commercial-trial";
 import { useGroupEvents } from "@/hooks/use-group-events";
 import type { PermissionType } from "@/hooks/use-permissions";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -52,12 +49,7 @@ import {
   showSyncProgressToast,
   showToast,
 } from "@/lib/toast-utils";
-import type {
-  BrowserProfile,
-  CamoufoxConfig,
-  SyncSettings,
-  WayfernConfig,
-} from "@/types";
+import type { BrowserProfile, CamoufoxConfig, WayfernConfig } from "@/types";
 
 type BrowserTypeString = "camoufox" | "wayfern";
 
@@ -97,41 +89,14 @@ export default function Home() {
   const [syncLeaderProfile, setSyncLeaderProfile] =
     useState<BrowserProfile | null>(null);
 
-  // Wayfern terms and commercial trial hooks
+  // Wayfern terms hook
   const {
     termsAccepted,
     isLoading: termsLoading,
     checkTerms,
   } = useWayfernTerms();
-  const {
-    trialStatus,
-    hasAcknowledged: trialAcknowledged,
-    checkTrialStatus,
-  } = useCommercialTrial();
 
-  // Cloud auth for cross-OS unlock
-  const { user: cloudUser } = useCloudAuth();
-  const crossOsUnlocked =
-    cloudUser?.plan !== "free" &&
-    (cloudUser?.subscriptionStatus === "active" ||
-      cloudUser?.planPeriod === "lifetime");
-
-  const [selfHostedSyncConfigured, setSelfHostedSyncConfigured] =
-    useState(false);
-
-  const checkSelfHostedSync = useCallback(async () => {
-    try {
-      const settings = await invoke<SyncSettings>("get_sync_settings");
-      const hasConfig = Boolean(
-        settings.sync_server_url && settings.sync_token,
-      );
-      setSelfHostedSyncConfigured(hasConfig && !cloudUser);
-    } catch {
-      setSelfHostedSyncConfigured(false);
-    }
-  }, [cloudUser]);
-
-  const syncUnlocked = crossOsUnlocked || selfHostedSyncConfigured;
+  const syncUnlocked = true;
 
   const [createProfileDialogOpen, setCreateProfileDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
@@ -1003,11 +968,6 @@ export default function Home() {
     }
   }, [isInitialized, checkAllPermissions]);
 
-  // Check self-hosted sync config on mount and when cloud user changes
-  useEffect(() => {
-    void checkSelfHostedSync();
-  }, [checkSelfHostedSync]);
-
   // Filter data by selected group and search query
   const filteredProfiles = useMemo(() => {
     let filtered = profiles;
@@ -1046,8 +1006,8 @@ export default function Home() {
   const isLoading = profilesLoading || groupsLoading || proxiesLoading;
 
   return (
-    <div className="grid items-center justify-items-center min-h-screen gap-8 font-(family-name:--font-geist-sans) bg-background">
-      <main className="flex flex-col items-center w-full max-w-3xl">
+    <div className="flex flex-col min-h-screen font-(family-name:--font-geist-sans) bg-background">
+      <main className="flex flex-col w-full flex-1 px-6">
         <div className="w-full">
           <HomeHeader
             onCreateProfileDialogOpen={setCreateProfileDialogOpen}
@@ -1094,7 +1054,6 @@ export default function Home() {
             onAssignExtensionGroup={handleAssignExtensionGroup}
             onOpenProfileSyncDialog={handleOpenProfileSyncDialog}
             onToggleProfileSync={handleToggleProfileSync}
-            crossOsUnlocked={crossOsUnlocked}
             syncUnlocked={syncUnlocked}
             getProfileSyncInfo={getProfileSyncInfo}
             onLaunchWithSync={(profile) => {
@@ -1111,7 +1070,6 @@ export default function Home() {
         }}
         onCreateProfile={handleCreateProfile}
         selectedGroupId={selectedGroupId}
-        crossOsUnlocked={crossOsUnlocked}
       />
 
       <SettingsDialog
@@ -1137,7 +1095,6 @@ export default function Home() {
         onClose={() => {
           setImportProfileDialogOpen(false);
         }}
-        crossOsUnlocked={crossOsUnlocked}
       />
 
       <ProxyManagementDialog
@@ -1192,7 +1149,6 @@ export default function Home() {
             ? runningProfiles.has(currentProfileForCamoufoxConfig.id)
             : false
         }
-        crossOsUnlocked={crossOsUnlocked}
       />
 
       <GroupManagementDialog
@@ -1208,7 +1164,6 @@ export default function Home() {
         onClose={() => {
           setExtensionManagementDialogOpen(false);
         }}
-        limitedMode={!crossOsUnlocked}
       />
 
       <GroupAssignmentDialog
@@ -1284,7 +1239,6 @@ export default function Home() {
         isOpen={syncConfigDialogOpen}
         onClose={(loginOccurred) => {
           setSyncConfigDialogOpen(false);
-          void checkSelfHostedSync();
           if (loginOccurred) {
             setSyncAllDialogOpen(true);
           }
@@ -1314,18 +1268,6 @@ export default function Home() {
       <WayfernTermsDialog
         isOpen={!termsLoading && termsAccepted === false}
         onAccepted={checkTerms}
-      />
-
-      {/* Commercial Trial Modal - shown once when trial expires (skip for paid users) */}
-      <CommercialTrialModal
-        isOpen={
-          !termsLoading &&
-          termsAccepted === true &&
-          trialStatus?.type === "Expired" &&
-          !trialAcknowledged &&
-          !crossOsUnlocked
-        }
-        onClose={checkTrialStatus}
       />
 
       {/* Launch on Login Dialog - shown on every startup until enabled or declined */}

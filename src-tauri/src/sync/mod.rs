@@ -2,6 +2,7 @@ mod client;
 pub mod encryption;
 mod engine;
 pub mod manifest;
+pub mod r2_sync;
 pub mod scheduler;
 pub mod subscription;
 pub mod types;
@@ -18,6 +19,10 @@ pub use engine::{
   set_proxy_sync_enabled, set_vpn_sync_enabled, sync_profile, trigger_sync_for_profile, SyncEngine,
 };
 pub use manifest::{compute_diff, generate_manifest, HashCache, ManifestDiff, SyncManifest};
+pub use r2_sync::{
+  start_r2_scheduler, stop_r2_scheduler, R2SyncEngine, R2SyncPublicSettings, R2SyncResult,
+  R2SyncSecrets, R2SyncSettings,
+};
 pub use scheduler::{get_global_scheduler, set_global_scheduler, SyncScheduler};
 pub use subscription::{SubscriptionManager, SyncWorkItem};
 pub use types::{SyncError, SyncResult};

@@ -410,6 +410,42 @@
       "profileLockedShort": "In use",
       "cannotLaunchLocked": "Cannot launch — profile is in use by {{email}}",
       "createdBy": "Created by {{email}}"
+    },
+    "r2": {
+      "tabLabel": "Cloudflare R2",
+      "description": "Sync your profiles, proxies, and groups directly to your own Cloudflare R2 bucket. Data is updated at the configured interval, not in real-time.",
+      "accountId": "Account ID",
+      "accountIdPlaceholder": "Your Cloudflare Account ID",
+      "bucketName": "Bucket Name",
+      "bucketNamePlaceholder": "my-donut-sync-bucket",
+      "accessKeyId": "Access Key ID",
+      "accessKeyIdPlaceholder": "R2 Access Key ID",
+      "secretAccessKey": "Secret Access Key",
+      "secretAccessKeyPlaceholder": "R2 Secret Access Key",
+      "showKey": "Show key",
+      "hideKey": "Hide key",
+      "syncInterval": "Sync Interval",
+      "intervalNote": "Synchronization runs at the selected interval. Use \"Sync Now\" to trigger an immediate sync.",
+      "intervals": {
+        "15": "15 minutes",
+        "30": "30 minutes",
+        "60": "1 hour",
+        "360": "6 hours",
+        "1440": "24 hours"
+      },
+      "active": "R2 Sync Active",
+      "lastSync": "Last synced",
+      "testConnection": "Test Connection",
+      "testing": "Testing...",
+      "connectionSuccess": "Connection successful",
+      "connectionFailed": "Connection failed",
+      "fillAllFields": "Please fill in all fields",
+      "save": "Enable R2 Sync",
+      "syncNow": "Sync Now",
+      "disconnect": "Disconnect",
+      "settingsSaved": "R2 sync enabled and running",
+      "disconnected": "R2 sync disconnected",
+      "syncSuccess": "Synced {{profiles}} profiles, {{proxies}} proxies, {{groups}} groups"
     }
   },
   "integrations": {

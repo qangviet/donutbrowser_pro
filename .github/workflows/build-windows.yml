@@ -104,7 +104,7 @@ jobs:
         shell: bash
         run: |
           TAG="${{ steps.tag.outputs.tag }}"
-          VERSION="${TAG#v}"
+          VERSION=$(grep '^version' src-tauri/Cargo.toml | head -1 | sed 's/.*= *"\(.*\)"/\1/')
           PORTABLE_DIR="Donut-Portable"
           mkdir -p "$PORTABLE_DIR"
 
@@ -123,7 +123,7 @@ jobs:
         shell: bash
         run: |
           TAG="${{ steps.tag.outputs.tag }}"
-          VERSION="${TAG#v}"
+          VERSION=$(grep '^version' src-tauri/Cargo.toml | head -1 | sed 's/.*= *"\(.*\)"/\1/')
           SETUP_EXE="src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/Donut_${VERSION}_x64-setup.exe"
           PORTABLE_ZIP="Donut_${VERSION}_x64-portable.zip"
 

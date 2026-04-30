@@ -207,7 +207,7 @@ impl AppAutoUpdater {
 
       // Build the release page URL
       let release_page_url = format!(
-        "https://github.com/zhom/donutbrowser/releases/tag/{}",
+        "https://github.com/qangviet/donutbrowser_pro/releases/tag/{}",
         latest_release.tag_name
       );
 
@@ -278,7 +278,7 @@ impl AppAutoUpdater {
   async fn fetch_app_releases(
     &self,
   ) -> Result<Vec<AppRelease>, Box<dyn std::error::Error + Send + Sync>> {
-    let url = "https://api.github.com/repos/zhom/donutbrowser/releases?per_page=100";
+    let url = "https://api.github.com/repos/qangviet/donutbrowser_pro/releases?per_page=100";
     let response = self
       .client
       .get(url)
